@@ -13,41 +13,48 @@
         var fileLength = 0;
         var files = [];
 
-        function handleEvent(event) {
 
-
-            if (event.type === "load") {
-                console.log("Doc [", count, "] : load: ", reader.result)
-                setTimeout(() => {
-
-                }, 500);
-                count++
-            }
-
-            if (event.type === "error") {
-                console.log("ERROR: There is an error!!!");
-            }
-        }
-
-
-        function addListeners(reader) {
-            // reader.addEventListener("loadstart", handleEvent);
-            // reader.addEventListener("load", handleEvent);
-            reader.addEventListener("load", handleEvent);
-            reader.addEventListener("error", handleEvent);
-            // reader.addEventListener("progress", handleEvent);
-            // reader.addEventListener("error", handleEvent);
-            // reader.addEventListener("abort", handleEvent);
-        }
         function previewFiles() {
             const preview = document.querySelector("#preview");
             files = document.querySelector("input[type=file]").files;
-            readNewFile(files[count]);
+            // readUploadedFileRecursively(files[count]);
+            handleUpload(files);
 
         }
 
+        const readUploadedFileWithPromise = (inputFile) => {
+            const temporaryFileReader = new FileReader();
 
-        function readNewFile(file) {
+            return new Promise((resolve, reject) => {
+                temporaryFileReader.onerror = () => {
+                    temporaryFileReader.abort();
+                    reject(new DOMException("Problem parsing input file."));
+                };
+
+                temporaryFileReader.onload = () => {
+                    resolve({
+                        data: temporaryFileReader.result,
+                        name: inputFile.name
+                    });
+                };
+                temporaryFileReader.readAsDataURL(inputFile);
+            });
+        };
+
+        const handleUpload = async (files) => {
+            try {
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    const fileContents = await readUploadedFileWithPromise(file)
+                    console.log(fileContents);
+                }
+
+            } catch (e) {
+                console.warn(e.message)
+            }
+        }
+
+        function readUploadedFileRecursively(file) {
             if (file) {
                 var reader = new FileReader();
                 reader.onload = function (event) {
@@ -56,7 +63,7 @@
                 reader.readAsDataURL(file);
                 if (count == files.length) { return; }
                 count++;
-                readNewFile(files[count]);
+                readUploadedFileRecursively(files[count]);
             }
         }
 
